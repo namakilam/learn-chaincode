@@ -44,7 +44,7 @@ func (t *SimpleChaincode) Init(stub shim.ChaincodeStubInterface, function string
 	}
 	err := stub.PutState("hellow_world", []byte(args[0]))
 	if err != nil {
-		return nil. err
+		return nil, err
 	}
 
 	return nil, nil
@@ -78,7 +78,7 @@ func (t *SimpleChaincode) Query(stub shim.ChaincodeStubInterface, function strin
 	return nil, errors.New("Received unknown function query: " + function)
 }
 
-func (t *SimpleChainCode) read(stub.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) read(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	var name, jsonResp string
 	var err error
 
@@ -96,7 +96,7 @@ func (t *SimpleChainCode) read(stub.ChaincodeStubInterface, args []string) ([]by
 	return valAsbytes, nil
 }
 
-func (t *SimpleChainCode) write(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChaincode) write(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	var name, value string
 	var err error
 	fmt.Println("running write()")
