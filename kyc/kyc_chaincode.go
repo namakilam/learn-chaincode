@@ -37,11 +37,11 @@ func main()  {
 	}
 }
 
-func (t *SimpleChainCode) Init(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+func (t *SimpleChainCode) Init(stub shim.ChaincodeStubInterface,function string, args []string) ([]byte, error) {
 	fmt.Print("Initializing ChainCode.....")
 	err := t.createTable(stub)
 	if err != nil {
-		return nil, errors.New("Error creating customer table. Cause : "+ err)
+		return nil, err
 	}
 	return []byte("INITIALIZATION O.K"), nil
 }
@@ -84,10 +84,14 @@ func (t * SimpleChainCode) readDataFromTable(stub shim.ChaincodeStubInterface, a
 
 	rows, err := stub.GetRows("customerTable", columns)
 	if err != nil {
-		return  nil, errors.New("Retrieve Operation Failed. Cause :" + err)
+		return  nil, err
 	}
 
-	return json.Marshal(rows), nil
+	for elem := range rows {
+		return []byte(fmt.Sprintf("%s",elem)), nil
+	}
+
+	return nil, nil
 }
 
 func (t *SimpleChainCode) createTable(stub shim.ChaincodeStubInterface) error {
@@ -114,9 +118,9 @@ func (t *SimpleChainCode) insertDataIntoTable(stub shim.ChaincodeStubInterface, 
 		return nil, errors.New("Incorrect Number of Arguments. Required 1.")
 	}
 	var customer Customer
-	err := json.Unmarshal(args[0], customer)
+	err := json.Unmarshal([]byte(args[0]), &customer)
 	if  err != nil {
-		return nil, errors.New("Unable To Parse Argument String. Cause : " + err)
+		return nil, err
 	}
 
 	var columns []*shim.Column
@@ -134,31 +138,31 @@ func (t *SimpleChainCode) insertDataIntoTable(stub shim.ChaincodeStubInterface, 
 	if err != nil {
 		columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: ""}})
 	} else {
-		columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: education_field}})
+		columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: string(education_field)}})
 	}
 
 	employement_field, err := json.Marshal(customer.Employement)
 	if err != nil {
 		columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: ""}})
 	} else {
-		columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: employement_field}})
+		columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: string(employement_field)}})
 	}
 	health_field, err := json.Marshal(customer.Health)
 	if err != nil {
 		columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: ""}})
 	} else {
-		columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: health_field}})
+		columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: string(health_field)}})
 	}
 	possesions_field, err := json.Marshal(customer.Possesions)
 	if err != nil {
 		columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: ""}})
 	} else {
-		columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: possesions_field}})
+		columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: string(possesions_field)}})
 	}
 	row := shim.Row{Columns: columns}
 	ok, err := stub.InsertRow("customerTable", row)
 	if err != nil {
-		return  nil, errors.New("Insert Operation Failed. Cause :" + err)
+		return  nil, err
 	}
 	if !ok {
 		return nil, errors.New("Insert Operation Failed. Row with the given key already exists.")
