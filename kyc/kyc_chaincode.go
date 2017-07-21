@@ -55,6 +55,41 @@ func (t *SimpleChainCode) Invoke(stub shim.ChaincodeStubInterface, function stri
 	return nil, errors.New("Unknown Function Invocation")
 }
 
+func (t *SimpleChainCode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
+	switch function {
+	case "retrieve":
+		return t.readDataFromTable(stub, args)
+	}
+
+	return nil, errors.New("Unknown Function Invocation")
+}
+
+func (t * SimpleChainCode) readDataFromTable(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+	if len(args) < 1 {
+		return nil, errors.New("Incorrect Number Of Arguments. One or More Needed.")
+	}
+	var columns []shim.Column
+	if len(args) >= 1 {
+		columns = append(columns, shim.Column{Value: &shim.Column_String_{String_: args[0]}})
+	}
+	if len(args) >= 2 {
+		columns = append(columns, shim.Column{Value: &shim.Column_String_{String_: args[1]}})
+	}
+	if len(args) >= 3 {
+		columns = append(columns, shim.Column{Value: &shim.Column_String_{String_: args[2]}})
+	}
+	if len(args) >= 4 {
+		columns = append(columns, shim.Column{Value: &shim.Column_String_{String_: args[3]}})
+	}
+
+	rows, err := stub.GetRows("customerTable", columns)
+	if err != nil {
+		return  nil, errors.New("Retrieve Operation Failed. Cause :" + err)
+	}
+
+	return json.Marshal(rows), nil
+}
+
 func (t *SimpleChainCode) createTable(stub shim.ChaincodeStubInterface) error {
 	var columns []*shim.ColumnDefinition
 	columns = append(columns, &shim.ColumnDefinition{Name:"name", Type: shim.ColumnDefinition_STRING, Key: true})
