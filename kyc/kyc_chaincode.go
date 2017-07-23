@@ -39,17 +39,16 @@ func main()  {
 
 func (t *SimpleChainCode) Init(stub shim.ChaincodeStubInterface,function string, args []string) ([]byte, error) {
 	fmt.Print("Initializing ChainCode.....")
-	err := t.createTable(stub)
-	if err != nil {
-		return nil, err
-	}
+
 	return []byte("INITIALIZATION O.K"), nil
 }
 
 func (t *SimpleChainCode) Invoke(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	switch function {
 	case "insert":
-		return t.insertDataIntoTable(stub, args)
+		return t.insertDataIntoLedger(stub, args)
+	case "update":
+	    	return t.updateDataIntoLedger(stub, args)
 	}
 
 	return nil, errors.New("Unknown Function Invocation")
@@ -58,115 +57,63 @@ func (t *SimpleChainCode) Invoke(stub shim.ChaincodeStubInterface, function stri
 func (t *SimpleChainCode) Query(stub shim.ChaincodeStubInterface, function string, args []string) ([]byte, error) {
 	switch function {
 	case "retrieve":
-		return t.readDataFromTable(stub, args)
+		return t.readDataFromLedger(stub, args)
 	}
 
 	return nil, errors.New("Unknown Function Invocation")
 }
 
-func (t * SimpleChainCode) readDataFromTable(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
-	if len(args) < 1 {
-		return nil, errors.New("Incorrect Number Of Arguments. One or More Needed.")
-	}
-	var columns []shim.Column
-	if len(args) >= 1 {
-		columns = append(columns, shim.Column{Value: &shim.Column_String_{String_: args[0]}})
-	}
-	if len(args) >= 2 {
-		columns = append(columns, shim.Column{Value: &shim.Column_String_{String_: args[1]}})
-	}
-	if len(args) >= 3 {
-		columns = append(columns, shim.Column{Value: &shim.Column_String_{String_: args[2]}})
-	}
-	if len(args) >= 4 {
-		columns = append(columns, shim.Column{Value: &shim.Column_String_{String_: args[3]}})
-	}
+func (t *SimpleChainCode) updateDataIntoLedger(stub shim.ChaincodeStubInterface, args[] string) ([]byte, error) {
+    if len(args) != 2 {
+	return nil, errors.New("Incorrect Number of Arguments. Required : 2")
+    }
 
-	rows, err := stub.GetRows("customerTable", columns)
-	if err != nil {
-		return  nil, err
-	}
+    key := args[0]
+    customerInfo, err := stub.GetState(key)
 
-	for elem := range rows {
-		return []byte(fmt.Sprintf("%s",elem)), nil
-	}
-
-	return nil, nil
+    if err != nil {
+	return nil, errors.New("Entry for given key not found!. Please insert into the ledger first.")
+    }
+	// write update logic
+    return customerInfo, nil
 }
 
-func (t *SimpleChainCode) createTable(stub shim.ChaincodeStubInterface) error {
-	var columns []*shim.ColumnDefinition
-	columns = append(columns, &shim.ColumnDefinition{Name:"name", Type: shim.ColumnDefinition_STRING, Key: true})
-	columns = append(columns, &shim.ColumnDefinition{Name:"gender", Type: shim.ColumnDefinition_STRING, Key: false})
-	columns = append(columns, &shim.ColumnDefinition{Name:"dob", Type: shim.ColumnDefinition_STRING, Key: false})
-	columns = append(columns, &shim.ColumnDefinition{Name:"aadhar_no", Type: shim.ColumnDefinition_STRING, Key: true})
-	columns = append(columns, &shim.ColumnDefinition{Name:"pan_no", Type: shim.ColumnDefinition_STRING, Key: true})
-	columns = append(columns, &shim.ColumnDefinition{Name:"cibil_score", Type: shim.ColumnDefinition_INT32, Key: false})
-	columns = append(columns, &shim.ColumnDefinition{Name:"address_line", Type: shim.ColumnDefinition_STRING, Key: false})
-	columns = append(columns, &shim.ColumnDefinition{Name:"city", Type: shim.ColumnDefinition_STRING, Key: true})
-	columns = append(columns, &shim.ColumnDefinition{Name:"marital_status", Type: shim.ColumnDefinition_STRING, Key: false})
-	columns = append(columns, &shim.ColumnDefinition{Name:"education_map", Type: shim.ColumnDefinition_STRING, Key: false})
-	columns = append(columns, &shim.ColumnDefinition{Name:"employement_map", Type: shim.ColumnDefinition_STRING, Key: false})
-	columns = append(columns, &shim.ColumnDefinition{Name:"health_map", Type: shim.ColumnDefinition_STRING, Key: false})
-	columns = append(columns, &shim.ColumnDefinition{Name:"possesion_map", Type: shim.ColumnDefinition_STRING, Key: false})
 
-	return stub.CreateTable("customerTable", columns)
-}
-
-func (t *SimpleChainCode) insertDataIntoTable(stub shim.ChaincodeStubInterface, args []string) ([]byte, error){
+func (t *SimpleChainCode) readDataFromLedger(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
 	if len(args) != 1 {
-		return nil, errors.New("Incorrect Number of Arguments. Required 1.")
-	}
-	var customer Customer
-	err := json.Unmarshal([]byte(args[0]), &customer)
-	if  err != nil {
-		return nil, err
+	    return nil, errors.New("Incorrect Number of Arguments. Required : 1")
 	}
 
-	var columns []*shim.Column
-	columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: customer.Name}})
-	columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: customer.Gender}})
-	columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: customer.DOB}})
-	columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: customer.Aadhar}})
-	columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: customer.PAN}})
-	columns = append(columns, &shim.Column{Value: &shim.Column_Int32{Int32 : customer.Cibil_Score}})
-	columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: customer.Address.Address_Line}})
-	columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: customer.Address.City}})
-	columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: customer.Marital_Status}})
-
-	education_field, err := json.Marshal(customer.Education)
+	customerInfo, err := stub.GetState(args[0])
 	if err != nil {
-		columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: ""}})
-	} else {
-		columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: string(education_field)}})
+	    return nil, err
 	}
 
-	employement_field, err := json.Marshal(customer.Employement)
-	if err != nil {
-		columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: ""}})
-	} else {
-		columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: string(employement_field)}})
-	}
-	health_field, err := json.Marshal(customer.Health)
-	if err != nil {
-		columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: ""}})
-	} else {
-		columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: string(health_field)}})
-	}
-	possesions_field, err := json.Marshal(customer.Possesions)
-	if err != nil {
-		columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: ""}})
-	} else {
-		columns = append(columns, &shim.Column{Value: &shim.Column_String_{String_: string(possesions_field)}})
-	}
-	row := shim.Row{Columns: columns}
-	ok, err := stub.InsertRow("customerTable", row)
-	if err != nil {
-		return  nil, err
-	}
-	if !ok {
-		return nil, errors.New("Insert Operation Failed. Row with the given key already exists.")
-	}
+	return customerInfo, nil
+}
 
-	return []byte("Insert Success"), nil
+func (t * SimpleChainCode) insertDataIntoLedger(stub shim.ChaincodeStubInterface, args []string) ([]byte, error) {
+    if len(args) != 1 {
+	return nil, errors.New("Incorrect Number of Arguments. Required : 1") 
+    }
+
+    var customer Customer
+    err := json.Unmarshal([]byte(args[0]), &customer)
+    if err != nil {
+	return nil, err
+    }
+
+    key := customer.Aadhar
+    value, err := json.Marshal(customer)
+    if err != nil {
+	return nil, err
+    }
+    err = stub.PutState(key, value) 
+    if err != nil {
+	return nil, err
+    }
+
+    fmt.Println("Ledger state successfully updated")
+
+    return []byte("Insert Success"), nil
 }
