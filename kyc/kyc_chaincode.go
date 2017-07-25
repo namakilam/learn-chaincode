@@ -74,8 +74,29 @@ func (t *SimpleChainCode) updateDataIntoLedger(stub shim.ChaincodeStubInterface,
     if err != nil {
 	return nil, errors.New("Entry for given key not found!. Please insert into the ledger first.")
     }
-	// write update logic
-    return customerInfo, nil
+    
+    var customer, customer1 Customer
+    err = json.Unmarshal(customerInfo, &customer)
+    err = json.Unmarshal([]byte(args[1]), &customer1) 
+   
+    if err != nil {
+	return nil, errors.New("Unable to parse Customer String. Please ensure a valid JSON.")
+    }
+
+    if customer.Aadhar == customer1.Aadhar && customer.PAN == customer1.PAN {
+	value, err := json.Marshal(customer1)
+	if err != nil {
+	    return nil, err
+	}
+
+	err = stub.PutState(key, value)
+	if err != nil {
+	    return nil, err
+	}
+	return []byte("Update Successful"), nil
+    } else {
+	return nil, errors.New("Cannot Update Immutable Fields (AADHAR NUMBER, PAN)")
+    }
 }
 
 
